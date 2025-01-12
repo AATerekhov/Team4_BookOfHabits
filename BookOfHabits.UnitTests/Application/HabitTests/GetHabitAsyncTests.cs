@@ -72,6 +72,7 @@ namespace BookOfHabits.UnitTests.Application.HabitTests
 
             //Assert
             result.Should().NotBeNull();
+            result?.Name.Should().Be(entity.Name.Name);
         }        
     }
 }
