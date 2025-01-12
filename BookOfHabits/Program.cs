@@ -1,5 +1,6 @@
 using BookOfHabits;
 using BookOfHabits.Infrastructure.ExceptionHandling;
+using BookOfHabits.Infrastructure.HealthCheck;
 using BookOfHabits.Infrastructure.MigrationsManager;
 using BookOfHabits.Infrastructure.Settings;
 using BookOfHabitsMicroservice.Application.Services.Implementations.Consumer;
@@ -21,6 +22,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHealthChecks().AddCheck<SimpleHealphCheck>("simpleHealph", tags: ["SimpleHealphCheck"]);
 
 builder.Services.AddAutoMapper(typeof(Program), typeof(CardMapping));
 
@@ -53,6 +55,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHealthChecks("/healph", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions()
+{
+    Predicate = healphCheck => healphCheck.Tags.Contains("SimpleHealphCheck")
+});
 
 app.UseRouting();
 app.UseCors();

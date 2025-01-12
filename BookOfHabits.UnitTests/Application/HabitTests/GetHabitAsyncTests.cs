@@ -6,7 +6,6 @@ using BookOfHabitsMicroservice.Application.Services.Implementations;
 using BookOfHabitsMicroservice.Application.Services.Implementations.FactoryMethodDomain;
 using BookOfHabitsMicroservice.Domain.Entity;
 using BookOfHabitsMicroservice.Domain.Repository.Abstractions;
-using BookOfHabitsMicroservice.Domain.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -21,12 +20,12 @@ namespace BookOfHabits.UnitTests.Application.HabitTests
             Habit entity,
             [Frozen] Mock<IRepository<Habit, Guid>> habitRepositoryMock,
             HabitsApplicationService habitsApplicationService,
-            CancellationToken token) 
+            CancellationToken token)
         {
             //Arrange
-            var entityId = entity.Id;            
+            var entityId = entity.Id;
             habitRepositoryMock.Setup(repo => repo.GetByIdAsync(x => x.Id.Equals(entityId),
-                $"{nameof(Habit.Card)},{nameof(Habit.Owner)},{nameof(Habit.Delay)},{nameof(Habit.Repetition)},{nameof(Habit.TimeResetInterval)}", 
+                $"{nameof(Habit.Card)},{nameof(Habit.Owner)},{nameof(Habit.Delay)},{nameof(Habit.Repetition)},{nameof(Habit.TimeResetInterval)}",
                 true,
                 token)).ReturnsAsync(entity);
             //Act
@@ -41,7 +40,7 @@ namespace BookOfHabits.UnitTests.Application.HabitTests
             Guid id,
             [Frozen] Mock<IRepository<Habit, Guid>> habitRepositoryMock,
             HabitsApplicationService habitsApplicationService,
-            CancellationToken token) 
+            CancellationToken token)
         {
             //Arrenge
             Habit? entity = null;
@@ -73,6 +72,7 @@ namespace BookOfHabits.UnitTests.Application.HabitTests
 
             //Assert
             result.Should().NotBeNull();
-        }
+            result?.Name.Should().Be(entity.Name.Name);
+        }        
     }
 }
