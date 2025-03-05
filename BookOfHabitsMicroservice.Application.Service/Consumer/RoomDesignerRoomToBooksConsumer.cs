@@ -21,20 +21,26 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations.Consumer
                 CreateDate = DateTime.UtcNow
             };
             var manager = await personRepository.GetByIdAsync(x => x.Id.Equals(roomInfo.ManagerId), includes: "_rooms", cancellationToken: context.CancellationToken);
+            Room? room = null;
             if (manager is null)
             {
-                var personItem = new Person(roomInfo.ManagerId, new PersonName($"{roomInfo.Name}Owner"));
-                manager = await personRepository.AddAsync(personItem, context.CancellationToken);
+                manager = new Person(roomInfo.ManagerId, new PersonName($"{roomInfo.Name}Owner"));
+                room = new Room(roomInfo.Id, manager, new RoomName(roomInfo.Name), roomInfo.CreateDate, roomInfo.CreateDate);
+
+                await personRepository.AddAsync(manager, context.CancellationToken);
+            }
+            else
+            {
+                Room? roomEntity = await roomRepository.GetByIdAsync(filter: x => x.Id.Equals(roomInfo.Id), cancellationToken: context.CancellationToken);
+                if (roomEntity is not null)
+                    throw new BadRequestException(BadRequestEntityExistsMessage(roomInfo.Id, nameof(Room)));
+
+                room = new Room(roomInfo.Id, manager, new RoomName(roomInfo.Name), roomInfo.CreateDate, roomInfo.CreateDate);
+                await personRepository.UpdateAsync(entity: manager, cancellationToken: context.CancellationToken);
             }
 
-            Room? roomEntity = await roomRepository.GetByIdAsync(filter: x => x.Id.Equals(roomInfo.Id), cancellationToken: context.CancellationToken);
-            if (roomEntity is not null)
-                throw new BadRequestException(BadRequestEntityExistsMessage(roomInfo.Id, nameof(Room)));
-
-            var room = new Room(roomInfo.Id, manager, new RoomName(roomInfo.Name), roomInfo.CreateDate, roomInfo.CreateDate);
-            await personRepository.UpdateAsync(entity: manager, cancellationToken: context.CancellationToken);
             room = await roomRepository.AddAsync(entity: room, cancellationToken: context.CancellationToken)
-                ?? throw new BadRequestException(FormatBadRequestErrorMessage(roomInfo.Id, nameof(Room)));
+            ?? throw new BadRequestException(FormatBadRequestErrorMessage(roomInfo.Id, nameof(Room)));
         }
     }
 }
