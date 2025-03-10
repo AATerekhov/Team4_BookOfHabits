@@ -3,6 +3,7 @@ using BookOfHabits.Requests.Card;
 using BookOfHabits.Responses.Card;
 using BookOfHabitsMicroservice.Application.Models.Card;
 using BookOfHabitsMicroservice.Application.Services.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookOfHabits.Controllers
@@ -15,8 +16,8 @@ namespace BookOfHabits.Controllers
         [HttpGet]
         public async Task<IEnumerable<CardShortResponse>> GetAllCards()
         {
-            IEnumerable<CardModel> persons = await cardsApplicationService.GetAllCardsAsync(HttpContext.RequestAborted);
-            return persons.Select(mapper.Map<CardShortResponse>);
+            IEnumerable<CardModel> cards = await cardsApplicationService.GetAllCardsAsync(HttpContext.RequestAborted);
+            return cards.Select(mapper.Map<CardShortResponse>);
         }
 
         [HttpGet("{id:guid}")]
@@ -27,6 +28,7 @@ namespace BookOfHabits.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<CardShortResponse> CreateCard(CreateCardRequest request)
         {
             var card = await cardsApplicationService.AddCardAsync(mapper.Map<CreateCardModel>(request), HttpContext.RequestAborted);

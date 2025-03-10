@@ -23,7 +23,7 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
                                 description: cardInfo.Description);
             if (cardInfo.Image is not null)
                 card.SetImage(cardInfo.Image);
-            card.SetTitlesCheck(cardInfo.TitleCheckElements);
+            card.SetTitlesCheck(["task 1", "task 2"]);
             card = await cardRepository.AddAsync(card, token)
                 ?? throw new BadRequestException(FormatBadRequestErrorMessage(card.Id, nameof(Card)));
             return mapper.Map<CardModel>(card);
