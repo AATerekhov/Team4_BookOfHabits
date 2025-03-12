@@ -15,30 +15,50 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
                                          IRepository<TemplateValues, Guid> templateValuesRepository,
                                          IMapper mapper) : BaseService, ICardsApplicationService
     {
+        /// <summary>
+        /// Создать новую карточку.
+        /// </summary>
+        /// <param name="cardInfo">Модель создания Имя и Описание</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         public async Task<CardModel?> AddCardAsync(CreateCardModel cardInfo, CancellationToken token = default)
         {
             var card = new Card(name: new CardName(cardInfo.Name),
-                                options: cardInfo.Options,
+                                options: Domain.Entity.Enums.CardOptions.Status | Domain.Entity.Enums.CardOptions.Value | Domain.Entity.Enums.CardOptions.Check,
                                 titles: DefaultValues.GetDefaultTemplateValues(),
                                 description: cardInfo.Description);
-            if (cardInfo.Image is not null)
-                card.SetImage(cardInfo.Image);
+            //if (cardInfo.Image is not null)
+            //    card.SetImage(cardInfo.Image);
             card.SetTitlesCheck(["task 1", "task 2"]);
             card = await cardRepository.AddAsync(card, token)
                 ?? throw new BadRequestException(FormatBadRequestErrorMessage(card.Id, nameof(Card)));
             return mapper.Map<CardModel>(card);
         }
 
-        public async Task DeleteCard(Guid id, CancellationToken token = default)
+        /// <summary>
+        /// Удаление карточки.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
+        /// <exception cref="BadRequestException"></exception>
+        public async Task<bool> DeleteCard(Guid id, CancellationToken token = default)
         {
             var card = await cardRepository.GetByIdAsync(x => x.Id.Equals(id), includes:$"{nameof(Card.TemplateValues)}",cancellationToken: token)
                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(id, nameof(Card)));
             var templateValues = card.TemplateValues;
             if (await cardRepository.DeleteAsync(entity: card, cancellationToken: token) is false)
                 throw new BadRequestException(FormatBadRequestErrorMessage(id, nameof(Card)));
-            await templateValuesRepository.DeleteAsync(entity: templateValues, cancellationToken: token) ;
+            return await templateValuesRepository.DeleteAsync(entity: templateValues, cancellationToken: token) ;
         }
 
+        /// <summary>
+        /// Получить список всех карточек.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
         public async Task<IEnumerable<CardModel>> GetAllCardsAsync(CancellationToken token = default)
         {
             var cards = (await cardRepository.GetAllAsync(filter: x => x.IsPublic,
@@ -47,6 +67,13 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             return cards.Select(mapper.Map<CardModel>);
         }
 
+        /// <summary>
+        /// Получение карточки по Identification.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
         public async Task<CardModel?> GetCardByIdAsync(Guid id, CancellationToken token = default)
         {
             Card card = await cardRepository.GetByIdAsync(x => x.Id.Equals(id),
@@ -57,7 +84,14 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             return mapper.Map<CardModel>(card);
         }
 
-        public async Task UpdateCard(UpdateCardModel cardInfo, CancellationToken token = default)
+        /// <summary>
+        /// Обновление основных свойств и options
+        /// </summary>
+        /// <param name="cardInfo">Модель обновления</param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<bool> UpdateCard(UpdateCardModel cardInfo, CancellationToken token = default)
         {
             var card = await cardRepository.GetByIdAsync(x => x.Id.Equals(cardInfo.Id), cancellationToken: token)
                  ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(cardInfo.Id, nameof(Card)));
@@ -70,9 +104,18 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
                 card.SetImage(cardInfo.Image);
             
             await cardRepository.UpdateAsync(entity: card, token);
+            return true;
         }
 
-        public async Task UpdateTemplateValues(Guid cardId, UpdateTemplateValuesModel tempateValuesInfo, CancellationToken token = default)
+        /// <summary>
+        /// Обновление titul informations fields.
+        /// </summary>
+        /// <param name="cardId"></param>
+        /// <param name="tempateValuesInfo"></param>
+        /// <param name="token"></param>
+        /// <returns>true if Ok</returns>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<bool> UpdateTemplateValues(Guid cardId, UpdateTemplateValuesModel tempateValuesInfo, CancellationToken token = default)
         {
             var card = await cardRepository.GetByIdAsync(x => x.Id.Equals(cardId), includes: nameof(Card.TemplateValues), cancellationToken: token)
                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(cardId, nameof(Card)));
@@ -87,6 +130,7 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             template.SetTitlePositive(tempateValuesInfo.TitlePositive);            
             template.SetTitleNegative(tempateValuesInfo.TitleNegative);
             await templateValuesRepository.UpdateAsync(entity: template, token);
+            return true;
         }
     }
 }

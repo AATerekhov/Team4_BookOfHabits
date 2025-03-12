@@ -8,9 +8,9 @@ namespace BookOfHabits.Infrastructure.Validators
     {
         public CreateCardValidator()
         {
-            RuleFor(x => x.Options)
-                .Must(ValidateOptionsField)
-                .WithMessage($"There are not so many flags for this option {nameof(CardOptions)}");
+            //RuleFor(x => x.Options)
+            //    .Must(ValidateOptionsField)
+            //    .WithMessage($"There are not so many flags for this option {nameof(CardOptions)}");
             //RuleFor(x => x.TitleCheckElements)
             //    .NotNull();
         }

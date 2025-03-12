@@ -36,22 +36,25 @@ namespace BookOfHabits.Controllers
         }
 
         [HttpPut]
-        public async Task UpdateCardAsync(UpdateCardRequest request)
+        [Authorize]
+        public async Task<bool> UpdateCardAsync(UpdateCardRequest request)
         {
-            await cardsApplicationService.UpdateCard(mapper.Map<UpdateCardModel>(request), HttpContext.RequestAborted);
+            return await cardsApplicationService.UpdateCard(mapper.Map<UpdateCardModel>(request), HttpContext.RequestAborted);
         }
 
         [HttpPut("{id:guid}")]
-        public async Task UpdateTemplateValueAsync(Guid id, UpdateTemplateValuesRequest request)
+        [Authorize]
+        public async Task<bool> UpdateTemplateValueAsync(Guid id, UpdateTemplateValuesRequest request)
         {
-            await cardsApplicationService.UpdateTemplateValues(id, mapper.Map<UpdateTemplateValuesModel>(request), HttpContext.RequestAborted);
+           return await cardsApplicationService.UpdateTemplateValues(id, mapper.Map<UpdateTemplateValuesModel>(request), HttpContext.RequestAborted);
         }
 
 
         [HttpDelete("{id:guid}")]
-        public async Task DeleteCard(Guid id)
+        [Authorize]
+        public async Task<bool> DeleteCard(Guid id)
         {
-            await cardsApplicationService.DeleteCard(id, HttpContext.RequestAborted);
+           return await cardsApplicationService.DeleteCard(id, HttpContext.RequestAborted);
         }
     }
 }
