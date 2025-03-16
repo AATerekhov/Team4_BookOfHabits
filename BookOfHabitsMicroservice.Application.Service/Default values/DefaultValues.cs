@@ -6,13 +6,14 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations.Default_
     public static class DefaultValues
     {
         public static TemplateValues GetDefaultTemplateValues() 
-            => new TemplateValues(status: "ToDo;Doing;Done",
-                                  titleValue: "Result",
+            => new TemplateValues(titleStatus: "State",
+                                  titleValue: "Value result",
                                   titleCheck: "Tasks",
-                                  titleReportField: "Report",
-                                  tags: "Achievement;Important;Regular;Ordinary",
+                                  titleReportField: "Text report",
+                                  titleTags: "Metks",
                                   titlePositive: "Healthy",
-                                  titleNegative: "Damage");
+                                  titleNegative: "Damage",
+                                  titleFileReceiver: "File report");
         public static Delay GetDefaultDelay() 
             => new Delay(isAfterATime: false,
                          afterTime: 0,
