@@ -18,16 +18,16 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
         /// <summary>
         /// Создать новую карточку.
         /// </summary>
-        /// <param name="cardInfo">Модель создания Имя и Описание</param>
+        /// <param name="habitInfo">Модель создания Имя и Описание</param>
         /// <param name="token"></param>
         /// <returns></returns>
         /// <exception cref="BadRequestException"></exception>
-        public async Task<CardModel?> AddCardAsync(CreateCardModel cardInfo, CancellationToken token = default)
+        public async Task<CardModel?> AddCardAsync(CreateCardModel habitInfo, CancellationToken token = default)
         {
-            var card = new Card(name: new CardName(cardInfo.Name),
+            var card = new Card(name: new CardName(habitInfo.Name),
                                 options: Domain.Entity.Enums.CardOptions.Status | Domain.Entity.Enums.CardOptions.Value | Domain.Entity.Enums.CardOptions.Check,
                                 titles: DefaultValues.GetDefaultTemplateValues(),
-                                description: cardInfo.Description);            
+                                description: habitInfo.Description);            
             card.SetTitlesCheck(["Task 1", "Task 2"]);
             card.SetStatus(["ToDo", "Doing", "Done"]);
             card.SetTags(["Achievement", "Important", "Regular", "Ordinary"]);
@@ -87,23 +87,23 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
         /// <summary>
         /// Обновление основных свойств и options
         /// </summary>
-        /// <param name="cardInfo">Модель обновления</param>
+        /// <param name="habitInfo">Модель обновления</param>
         /// <param name="token"></param>
         /// <returns></returns>
         /// <exception cref="NotFoundException"></exception>
-        public async Task<bool> UpdateCard(UpdateCardModel cardInfo, CancellationToken token = default)
+        public async Task<bool> UpdateCard(UpdateCardModel habitInfo, CancellationToken token = default)
         {
-            var card = await cardRepository.GetByIdAsync(x => x.Id.Equals(cardInfo.Id), cancellationToken: token)
-                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(cardInfo.Id, nameof(Card)));
+            var card = await cardRepository.GetByIdAsync(x => x.Id.Equals(habitInfo.Id), cancellationToken: token)
+                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(habitInfo.Id, nameof(Card)));
 
-            card.SetName(cardInfo.Name);
-            card.SetDescription(cardInfo.Description);
-            card.SetTitlesCheck(cardInfo.TitleCheckElements);
-            card.SetStatus(cardInfo.Status);
-            card.SetTags(cardInfo.Tags);
-            card.SetOptions(cardInfo.Options);
-            if (cardInfo.Image is not null)
-                card.SetImage(cardInfo.Image);
+            card.SetName(habitInfo.Name);
+            card.SetDescription(habitInfo.Description);
+            card.SetTitlesCheck(habitInfo.TitleCheckElements);
+            card.SetStatus(habitInfo.Status);
+            card.SetTags(habitInfo.Tags);
+            card.SetOptions(habitInfo.Options);
+            if (habitInfo.Image is not null)
+                card.SetImage(habitInfo.Image);
 
             await cardRepository.UpdateAsync(entity: card, token);
             return true;

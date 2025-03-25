@@ -9,6 +9,7 @@ namespace BookOfHabitsMicroservice.Domain.Entity
     {
         public HabitName Name { get; private set; }
         public string Description { get; private set; }
+        public Guid OwnerId { get; set; }
         public Person Owner { get; private set; }
         public Card? Card { get; private set; }
         public Room Room { get; private set; }
@@ -46,6 +47,7 @@ namespace BookOfHabitsMicroservice.Domain.Entity
         public void SetPerson(Person owner)
         {
             Owner = owner;
+            OwnerId = owner.Id;
             Owner.GetHabit(this);
         }
         public void SetRoom(Room room) 

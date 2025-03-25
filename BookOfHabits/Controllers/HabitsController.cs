@@ -5,11 +5,14 @@ using BookOfHabitsMicroservice.Application.Models.Habit;
 using BookOfHabitsMicroservice.Application.Models.Card;
 using BookOfHabitsMicroservice.Application.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace BookOfHabits.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize]
     public class HabitsController(IHabitsApplicationService habitsApplicationService,
                                   IInstallCardApplicationService installCardApplicationService,
                                   ICardsApplicationService cardsApplicationService,
@@ -19,6 +22,15 @@ namespace BookOfHabits.Controllers
         public async Task<IEnumerable<HabitShortResponse>> GetAllRoomHabits(Guid roomId)
         {
             IEnumerable<HabitModel> habits = await habitsApplicationService.GetAllRoomHabitsAsync(roomId, HttpContext.RequestAborted);
+            return habits.Select(mapper.Map<HabitShortResponse>);
+        }
+
+        [HttpGet("room/person/{roomId:guid}")]
+        public async Task<IEnumerable<HabitShortResponse>> GetRoomHabitsByPerson(Guid roomId, [FromQuery] Guid personId)
+        {
+            var userNameId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = userNameId == null ? Guid.Empty : new Guid(userNameId);
+            IEnumerable<HabitModel> habits = await habitsApplicationService.GetRoomHabitsByPersonAsync(roomId, personId, userId, HttpContext.RequestAborted);
             return habits.Select(mapper.Map<HabitShortResponse>);
         }
 
