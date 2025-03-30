@@ -8,6 +8,9 @@ using BookOfHabitsMicroservice.Application.Services.Implementations.Mapping;
 using BookOfHabitsMicroservice.Infrastructure.EntityFramework;
 using FluentValidation.AspNetCore;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +27,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks().AddCheck<SimpleHealphCheck>("simpleHealph", tags: ["SimpleHealphCheck"]);
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+      .AddJwtBearer(options =>
+      {
+          options.TokenValidationParameters = new TokenValidationParameters
+          {
+              ValidateIssuerSigningKey = true,
+              IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.Get<ApplicationSettings>().ApiGateWaySettings?.ValidApiKeys)),
+              ValidateIssuer = true,
+              ValidIssuer = "Gateway",
+              ValidateAudience = true,
+              ValidAudience = "Microservices",
+              ValidateLifetime = true
+          };
+      });
+
 builder.Services.AddAutoMapper(typeof(Program), typeof(CardMapping));
 
 builder.Services.AddFluentValidationAutoValidation()
@@ -35,7 +53,7 @@ builder.Services.AddMassTransit(configurator =>
     configurator.AddConsumer<ParticipantAddedInRoomConsumer>();
     configurator.UsingRabbitMq((context, configurator) =>
     {
-        var rmqSettings = builder.Configuration.Get<ApplicationSettings>()!.RmqSettings;
+        var rmqSettings = builder.Configuration.Get<ApplicationSettings>().RmqSettings;
         configurator.Host(rmqSettings.Host,
                     rmqSettings.VHost,
                     h =>
@@ -61,6 +79,7 @@ app.UseHealthChecks("/healph", new Microsoft.AspNetCore.Diagnostics.HealthChecks
     Predicate = healphCheck => healphCheck.Tags.Contains("SimpleHealphCheck")
 });
 
+app.UseAuthentication();
 app.UseRouting();
 app.UseCors();
 app.UseAuthorization();
