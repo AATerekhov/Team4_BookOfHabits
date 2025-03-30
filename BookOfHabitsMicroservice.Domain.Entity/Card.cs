@@ -13,11 +13,11 @@ namespace BookOfHabitsMicroservice.Domain.Entity
         public string Description { get; private set; }
         public byte[]? Image { get; private set; }
         public string TitlesCheck { get; private set; }  //List
-        public string[] TitleCheckElements => TitlesCheck.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        public string[] TitleCheckElements => (TitlesCheck is not null) ? TitlesCheck.Split(';', StringSplitOptions.RemoveEmptyEntries) : [];
         public string StatusString { get; private set; } //List
-        public string[] Status => StatusString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        public string[] Status => (StatusString is not null) ? StatusString.Split(';', StringSplitOptions.RemoveEmptyEntries) : [];
         public string TagsString { get; private set; } //List
-        public string[] Tags => TagsString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        public string[] Tags => (TagsString is not null) ? TagsString.Split(';', StringSplitOptions.RemoveEmptyEntries) : [];
         public bool IsPublic { get; private set; }
         public Card(Guid id, CardName name, CardOptions options, TemplateValues titles, string description)
             : base(id)
@@ -37,6 +37,12 @@ namespace BookOfHabitsMicroservice.Domain.Entity
         protected Card() : base(Guid.NewGuid())
         {
 
+        }
+        public Card DeepCopyClose()
+        {
+            var result = DeepCopy();
+            result.Close();
+            return result;
         }
         public void SetName(string name) => Name = new CardName(name);
         public void SetDescription(string description) => Description = description;

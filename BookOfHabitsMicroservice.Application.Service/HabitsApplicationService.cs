@@ -11,9 +11,10 @@ using BookOfHabitsMicroservice.Domain.Repository.Abstractions;
 namespace BookOfHabitsMicroservice.Application.Services.Implementations
 {
     public class HabitsApplicationService(
-        IRepository<Habit, Guid> habitRepository,
+        IHabitsRepository habitRepository,
         IRepository<Person, Guid> personRepository,
         IRoomRepository roomRepository,
+        IRepository<Card, Guid> cardRepository,
         IRepository<Delay, Guid> delayRepository,
         IRepository<Repetition, Guid> repetitionRepository,
         IRepository<TimeResetInterval, Guid> timeResetIntervalRepository,
@@ -45,19 +46,26 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             Room room = await roomRepository.GetByIdAsync(x => x.Id.Equals(habitInfo.RoomId), includes: $"_habits", cancellationToken: token)
                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(habitInfo.RoomId, nameof(Room)));
 
+            Card card = await cardRepository.GetByIdAsync(filter: x => x.Id.Equals(habitInfo.CardId),
+                                                          includes: $"{nameof(Card.TemplateValues)}",
+                                                          cancellationToken: token)
+                ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(habitInfo.CardId, nameof(Card)));
+            var instanceCard = await cardRepository.AddAsync(entity: card.DeepCopyClose(), cancellationToken: token);
+
             var habit = habitFactory.FactoryMethod([habitInfo.Name, habitInfo.Description])
                 ?? throw new BadRequestException(BadRequestEntityExistsMessage(habitInfo.RoomId, nameof(Habit)));
             habit.SetPerson(owner);
             habit.SetRoom(room);
+            habit.SetCard(instanceCard);
 
             await roomRepository.UpdateAsync(entity: room, cancellationToken: token);
             await personRepository.UpdateAsync(entity: owner, cancellationToken: token);
-            habit = await habitRepository.AddAsync(entity: habit, cancellationToken: token)
+            var  habitAdded = await habitRepository.AddAsync(entity: habit, cancellationToken: token)
                 ?? throw new BadRequestException(FormatBadRequestErrorMessage(habit.Id, nameof(Habit)));
-            return mapper.Map<HabitModel>(habit);
+            return mapper.Map<HabitModel>(habitAdded);
         }
 
-        public async Task DeleteHabit(Guid id, CancellationToken token = default)
+        public async Task<bool> DeleteHabit(Guid id, CancellationToken token = default)
         {
             var habit = await habitRepository.GetByIdAsync(
                 filter: x => x.Id.Equals(id),
@@ -72,18 +80,15 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             await delayRepository.DeleteAsync(delay, token);
             await repetitionRepository.DeleteAsync(repetition, token);
             await timeResetIntervalRepository.DeleteAsync(timeResetInterval, token);
+            return true;
         }
 
         public async Task<IEnumerable<HabitModel>> GetAllRoomHabitsAsync(Guid roomId, CancellationToken token = default)
         {
-            Room? room = await roomRepository.GetByIdAsync(
-                filter: x => x.Id.Equals(roomId),
-                includes: $"_habits",
-                asNoTracking: true,
-                cancellationToken: token)
+            IEnumerable<Habit>? habits = await habitRepository.GetDetailedHabitsByRoomId(roomId, token)
                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(roomId, nameof(Room)));
 
-            return room.SuggestedHabits.Select(mapper.Map<HabitModel>);
+            return habits.Select(mapper.Map<HabitModel>);
         }
 
         public async Task<HabitModel?> GetHabitByIdAsync(Guid id, CancellationToken token = default)
@@ -97,12 +102,12 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             return mapper.Map<HabitModel>(habit);
         }
 
-        public async Task UpdateHabit(UpdateHabitModel habitInfo, CancellationToken token = default)
+        public async Task<bool> UpdateHabit(UpdateHabitModel habitInfo, CancellationToken token = default)
         {
             Person owner = await personRepository.GetByIdAsync(x => x.Id.Equals(habitInfo.PersonId), cancellationToken: token)
                 ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(habitInfo.PersonId, nameof(Person)));
 
-            Habit habit = await habitRepository.GetByIdAsync(x => x.Id.Equals(habitInfo.Id), includes: nameof(Habit.Owner), cancellationToken: token)
+            Habit habit = await habitRepository.GetByIdAsync(x => x.Id.Equals(habitInfo.Id), includes: $"{nameof(Habit.Owner)},{nameof(Habit.Delay)},{nameof(Habit.Repetition)},{nameof(Habit.TimeResetInterval)}", cancellationToken: token)
                  ?? throw new NotFoundException(FormatFullNotFoundErrorMessage(habitInfo.Id, nameof(Habit)));
             if (habit.Owner.Equals(owner) is false)
                 throw new BadRequestException(FormatBadRequestErrorMessage(habitInfo.PersonId, nameof(Person)));
@@ -112,7 +117,18 @@ namespace BookOfHabitsMicroservice.Application.Services.Implementations
             if (habitInfo.Description is not null)
                 habit.SetDescription(habitInfo.Description);
             habit.SetOptions(habitInfo.Options);
+            habit.UpdateDelay(mapper.Map<Delay>(habitInfo.Delay));
+            habit.UpdateTimeResetInterval(mapper.Map<TimeResetInterval>(habitInfo.TimeResetInterval));
+            habit.UpdateRepetition(mapper.Map<Repetition>(habitInfo.Repetition));
+
             await habitRepository.UpdateAsync(entity: habit, token);
+            if ((habit.Options & Domain.Entity.Enums.HabitOptions.Delayed) == Domain.Entity.Enums.HabitOptions.Delayed)
+                await delayRepository.UpdateAsync(entity: habit.Delay, token);
+            if ((habit.Options & Domain.Entity.Enums.HabitOptions.Repetition) == Domain.Entity.Enums.HabitOptions.Repetition)
+                await repetitionRepository.UpdateAsync(entity: habit.Repetition, token);
+            if ((habit.Options & Domain.Entity.Enums.HabitOptions.Reset) == Domain.Entity.Enums.HabitOptions.Reset)
+                await timeResetIntervalRepository.UpdateAsync(entity: habit.TimeResetInterval, token);
+            return true;
         }
         public async Task UpdateDelayHabit(Guid habitId, UpdateDelayModel delayInfo, CancellationToken token = default)
         {
